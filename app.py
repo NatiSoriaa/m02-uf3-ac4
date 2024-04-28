@@ -16,7 +16,7 @@ def connectBD():
     db = mysql.connector.connect(
         host = "localhost",
         user = "root",
-        passwd = "claumestra",
+        passwd = "",
         database = "users"
     )
     return db
@@ -56,10 +56,9 @@ def checkUser(user,password):
     bd=connectBD()
     cursor=bd.cursor()
 
-    query=f"SELECT user,name,surname1,surname2,age,genre FROM users WHERE user='{user}'\
-            AND password='{password}'"
-    print(query)
-    cursor.execute(query)
+    query = "SELECT user, name, surname1, surname2, age, genre FROM users WHERE user = %s AND password = %s"
+    values = (user, password)
+    cursor.execute(query, values)
     userData = cursor.fetchall()
     bd.close()
     
@@ -69,9 +68,16 @@ def checkUser(user,password):
         return userData[0]
 
 # cresteUser: crea un nuevo usuario en la BD
-def createUser(user,password,name,surname1,surname2,age,genre):
-    
-    return
+def createUser(user, password, name, surname1, surname2, age, genre):
+    bd = connectBD()
+    cursor = bd.cursor()
+
+    query = "INSERT INTO users (user, password, name, surname1, surname2, age, genre) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    values = (user, password, name, surname1, surname2, age, genre)
+    cursor.execute(query, values)
+
+    bd.commit()
+    bd.close()
 
 # Secuencia principal: configuración de la aplicación web ##########################################
 # Instanciación de la aplicación web Flask
@@ -89,7 +95,7 @@ def login():
 
 @app.route("/signin")
 def signin():
-    return "SIGN IN PAGE"
+    return render_template("signin.html")
 
 @app.route("/results",methods=('GET', 'POST'))
 def results():
@@ -103,6 +109,22 @@ def results():
             return render_template("results.html",login=False)
         else:
             return render_template("results.html",login=True,userData=userData)
+               
+@app.route("/newUser",methods=['POST'])
+def newUser():
+    if request.method == 'POST':
+        formData = request.form
+        user = formData['usuario']
+        password = formData['contrasena']
+        name = formData['nombre']
+        surname1 = formData['apellido1']
+        surname2 = formData['apellido2']
+        age = formData['edad']
+        genre = formData['genero']
+        createUser(user, password, name, surname1, surname2, age, genre)
+        return "usuario creado"
+
+
         
 # Configuración y arranque de la aplicación web
 app.config['TEMPLATES_AUTO_RELOAD'] = True
